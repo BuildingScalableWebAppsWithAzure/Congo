@@ -1,0 +1,92 @@
+﻿@model Congo.Web.ViewModels.ProductVM
+@using Congo.Web.ViewModels
+
+@{
+    ViewBag.Title = "ProductDetails";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>@Model.ProductName</h1>
+<div class="row">
+    <div class="col-xs-12 col-sm-6">
+        <h2>Details</h2>
+        <p>@Model.Description</p>
+
+        @if (Model.AverageRating.HasValue)
+        {
+            if (Model.AverageRating > 0)
+            {
+            <p>Average rating: @String.Format("{0:0.00}", Model.AverageRating)</p>
+            }
+        }
+      
+        <p><strong>Price: @string.Format("{0:C0}", Model.Price)</strong></p>
+
+        @if (Model.Attributes.Count > 0)
+        {
+            <dl>
+
+                @foreach (AttributeVM attribute in Model.Attributes)
+                {
+
+                    <dt>@attribute.Attribute</dt>
+                    <dd>@attribute.Value</dd>
+                }
+            </dl>
+
+        }
+        <div class="margin-top">
+            <a href="/Home/Index">Back to search</a>
+        </div>
+    </div>
+    <div class="col-xs-12 col-sm-6">
+        <h2>Reviews</h2>
+        <div id="reviews">
+            @if (Model.Reviews.Count > 0)
+            {
+                foreach (ProductReviewVM review in Model.Reviews)
+                {
+                    <div class="review-container">
+                        <div><strong>@review.ReviewerName</strong> said:</div>
+                        @review.Review
+                    </div>
+
+                }
+                <p class="margin-top">
+                    @Ajax.ActionLink("See all reviews", "AllReviews", "Home", new { id = Model.Id }, new AjaxOptions()
+               {
+                   HttpMethod = "GET",
+                   AllowCache = false,
+                   InsertionMode = InsertionMode.ReplaceWith,
+                   UpdateTargetId = "reviews",
+               })
+                </p>
+            }
+            else
+            {
+                <p>There are no reviews at this time.</p>
+            }
+
+        </div>
+        <a class="btn btn-default margin-top" href="/home/writereview/@Model.Id">Write a Review</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xs-12">
+        <hr />
+        <h4>Administrators Only</h4>
+        <a href="/home/editProduct/@Model.Id" class="btn btn-default">Edit Product</a>
+    </div>
+</div>
+
+
+@section scripts {
+    <script>
+        //performs an AJAX request to retrieve all scripts and populate the
+        function loadAllReviews() {
+            alert('clicked!');
+        }
+    </script>
+}
+
+

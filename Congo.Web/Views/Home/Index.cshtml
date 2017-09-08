@@ -1,0 +1,57 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+@using Congo.Web.ViewModels
+@model ProductSearchRequestVM
+
+<div class="jumbotron search-callout">
+    <h1>Find the perfect product.</h1>
+    @using (Html.BeginForm("SearchForProducts", "Home", FormMethod.Post))
+    {
+        <div class="form-inline">
+            <div class="form-group">
+                @Html.DropDownListFor(model => model.CategoryId, new SelectList(ViewBag.Categories, "Id", "CategoryName"), "All Categories", new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                @Html.TextBoxFor(model => model.ProductName, new { @class = "form-control", @placeholder = "Search term" })
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    }
+</div>
+
+@{
+    ProductSearchResultsVM searchResults = ViewBag.SearchResults;
+    if (searchResults != null)
+    {
+        if (searchResults.ProductResults.Count > 0)
+        {
+            <div class="row">
+                @foreach (ProductVM p in searchResults.ProductResults)
+                {
+                    <div class="col-xs-12 col-sm-6 col-md-3">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <h3>@p.ProductName</h3>
+                                <p>@p.Description</p>
+                                <p><a href="/home/product/@p.Id" class="btn btn-default">View</a></p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            //no results. 
+            <p>No products match your search.</p>
+        }
+
+    }
+}
+<div class="col-md-4">
+
+
+</div>
