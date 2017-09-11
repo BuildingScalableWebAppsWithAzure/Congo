@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using Congo.Web.Models;
-using Congo.Web.ViewModels;
-using Microsoft.Azure.Documents;
-using Microsoft.Azure.Documents.Client;
-using System.Threading.Tasks;
-using System.Linq.Expressions;
-using Microsoft.Azure.Documents.Linq;
-
-namespace Congo.Web.Persistence
+﻿namespace Congo.Web.Persistence
 {
+    using System;
+    using System.Collections.Generic;
+    using Congo.Web.Models;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Linq;
+
     public class ProductRepository
     {
         //a single DocumentClient instance that is shared across all instances of ProductRepository.
@@ -53,10 +49,10 @@ namespace Congo.Web.Persistence
             SqlParameterCollection sqlParams = new SqlParameterCollection(); 
             //construct our SQL statement. Note the inclusion of the partition key. If you fail to include
             //the partition key in a query against a partitioned collection, you will receive an error. 
-            string sqlQuery = "select * from c where c.doctype = 'product' and c.partitionkey = 'product'";
+            string sqlQuery = $"select * from c where c.doctype = 'product' and c.partitionkey = '{Constants.PARTITIONKEY_PRODUCT}'";
             if (! string.IsNullOrEmpty(categoryId))
             {
-                sqlQuery += " and (c.categoryId = @categoryId)";
+                sqlQuery += " and (c.categoryid = @categoryId)";
                 sqlParams.Add(new SqlParameter("@categoryId", categoryId));
             }
             if (! string.IsNullOrEmpty(productName))
@@ -84,15 +80,13 @@ namespace Congo.Web.Persistence
         /// <summary>
         /// Retrieves a product document by id. 
         /// </summary>
-        /// <param name="productId"></param>
-        /// <returns></returns>
         public async Task<Product> GetProductById(string productId)
         {
             //If you need a single document and you have the id, you don't have to perform a query. Instead, you 
             //can read it directly via its unique URI. Note that since this is a partitioned collection, 
             //we still have to include the partition key value in the RequestOptions. 
             Uri productDocumentUri = UriFactory.CreateDocumentUri(_databaseId, _collectionId, productId);
-            Document productDocument = await _client.ReadDocumentAsync(productDocumentUri, new RequestOptions { PartitionKey = new PartitionKey("product") }); 
+            Document productDocument = await _client.ReadDocumentAsync(productDocumentUri, new RequestOptions { PartitionKey = new PartitionKey(Constants.PARTITIONKEY_PRODUCT) }); 
             if (productDocument != null)
             {
                 return (Product)(dynamic)productDocument; 
@@ -100,37 +94,25 @@ namespace Congo.Web.Persistence
             return null; 
         }
 
-        /// <summary>
-        /// Writes changes to a product back to the Collection. 
-        /// </summary>
-        /// <param name="updatedProduct"></param>
-        /// <returns></returns>
-        public async Task UpdateProduct(Product updatedProduct)
-        {
-            //first, retrieve the product from the database. We're doing so because 
-            //we are allowing only a subset of fields to be updated, and we are ultimately 
-            //replacing the document in Cosmos DB. 
-            Product p = await GetProductById(updatedProduct.Id);
-
-            //apply our updates. 
-            p.ProductName = updatedProduct.ProductName;
-            p.Description = updatedProduct.Description;
-            p.Price = updatedProduct.Price;
-
-            //replace the product document in our collection. 
-            await UpdateItemAsync(p.Id, p);
-        }
+        ///// <summary>
+        ///// Writes changes to a product back to the Collection. 
+        ///// </summary>
+        ///// <param name="updatedProduct"></param>
+        ///// <returns></returns>
+        //public async Task UpdateProduct(Product updatedProduct)
+        //{
+        //    //replace the product document in our collection. 
+        //    await UpdateItemAsync(updatedProduct.Id, Constants.PARTITIONKEY_PRODUCT, updatedProduct);
+        //}
 
         /// <summary>
-        /// 
+        /// There is no concept of updating an existing document. Instead, we replace documents. 
+        /// This method replaces the document with the specified id. 
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="id"></param>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static async Task<Document> UpdateItemAsync<T>(string id, T item)
+        public async Task<Document> UpdateItemAsync<T>(string documentId, string partitionKey, T item)
         {
-            return await _client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(_databaseId, _collectionId, id), item, new RequestOptions { PartitionKey = new PartitionKey("product") });
+            Uri documentUri = UriFactory.CreateDocumentUri(_databaseId, _collectionId, documentId);
+            return await _client.ReplaceDocumentAsync(documentUri, item, new RequestOptions { PartitionKey = new PartitionKey(partitionKey) });
         }
 
         /// <summary>
@@ -138,8 +120,7 @@ namespace Congo.Web.Persistence
         /// </summary>
         public async Task<List<ProductReview>> GetReviewsForProduct(string productId)
         {
-            string sqlQuery = "Select * from c where c.doctype = 'product_review' and c.productid = '" 
-                + productId + "' and c.partitionkey = 'review-" + productId + "'";
+            string sqlQuery = $"select * from c where c.doctype = 'product_review' and c.productid = '{productId}' and c.partitionkey = 'review-{productId}'";
 
             IDocumentQuery<ProductReview> reviewsQuery = _client.CreateDocumentQuery<ProductReview>(
                    _collectionUri, sqlQuery,
@@ -149,18 +130,26 @@ namespace Congo.Web.Persistence
             {
                 results.AddRange(await reviewsQuery.ExecuteNextAsync<ProductReview>());
             }
-
             return results;
         }
 
         /// <summary>
         /// writes the supplied document to the database
         /// </summary>
-        /// <param name="review"></param>
-        /// <returns></returns>
-        public async Task<Document> CreateItemAsync<T>(T item)
+        public async Task<Document> CreateDocumentAsync<T>(T document)
         {
-            return await _client.CreateDocumentAsync(_collectionUri, item);
+            return await _client.CreateDocumentAsync(_collectionUri, document);
+        }
+
+        /// <summary>
+        /// Removes a document from the collection. 
+        /// </summary>
+        /// <returns></returns>
+        public async Task DeleteDocumentAsync(string documentId, string partitionKey)
+        {
+            Uri documentUri = UriFactory.CreateDocumentUri(_databaseId, _collectionId, documentId);
+            await _client.DeleteDocumentAsync(documentUri,
+                new RequestOptions { PartitionKey = new PartitionKey(partitionKey) });
         }
 
         /// <summary>

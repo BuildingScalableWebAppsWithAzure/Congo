@@ -1,9 +1,9 @@
-﻿using System;
-using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations; 
-
-namespace Congo.Web.Models
+﻿namespace Congo.Web.Models
 {
+    using System;
+    using Newtonsoft.Json;
+    using System.ComponentModel.DataAnnotations;
+
     /// <summary>
     /// Models a single product review. 
     /// </summary>
@@ -26,8 +26,5 @@ namespace Congo.Web.Models
 
         [JsonProperty("productid")]
         public string ProductId { get; set; }
-
-        [JsonProperty("partitionkey")]
-        public string PartitionKey { get; set; }
     }
 }

@@ -49,8 +49,10 @@
                     <div class="review-container">
                         <div><strong>@review.ReviewerName</strong> said:</div>
                         @review.Review
+                        <div>
+                            <a class="btn btn-default margin-top" href="/home/deleteReview?reviewId=@review.Id&productId=@review.ProductId">Delete</a>
+                        </div>
                     </div>
-
                 }
                 <p class="margin-top">
                     @Ajax.ActionLink("See all reviews", "AllReviews", "Home", new { id = Model.Id }, new AjaxOptions()

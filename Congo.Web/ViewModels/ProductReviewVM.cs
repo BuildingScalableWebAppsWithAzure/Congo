@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace Congo.Web.ViewModels
+﻿namespace Congo.Web.ViewModels
 {
+    using System;
+
     public class ProductReviewVM
     {
         public string Id { get; set; }

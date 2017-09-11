@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-
-namespace Congo.Web.ViewModels
+﻿namespace Congo.Web.ViewModels
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Holds a list of all products returned by a query. 
     /// </summary>

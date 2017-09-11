@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-
-namespace Congo.Web.Models
+﻿namespace Congo.Web.Models
 {
+    using Newtonsoft.Json;
+
     /// <summary>
     /// Models a single product category. 
     /// </summary>

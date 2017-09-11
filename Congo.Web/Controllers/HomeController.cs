@@ -1,12 +1,12 @@
-﻿using System.Web.Mvc;
-using System.Threading.Tasks;
-using Congo.Web.ViewModels;
-using Congo.Web.Services;
-using System.Collections.Generic;
-using System; 
-
-namespace Congo.Web.Controllers
+﻿namespace Congo.Web.Controllers
 {
+    using System.Web.Mvc;
+    using System.Threading.Tasks;
+    using Congo.Web.ViewModels;
+    using Congo.Web.Services;
+    using System.Collections.Generic;
+    using System;
+
     public class HomeController : Controller
     {
         private ProductService _productService = new ProductService(); 
@@ -32,6 +32,18 @@ namespace Congo.Web.Controllers
             ProductSearchResultsVM searchResults = await _productService.SearchForProducts(searchRequest.CategoryId, searchRequest.ProductName);
             ViewBag.SearchResults = searchResults; 
             return View("Index");
+        }
+
+        /// <summary>
+        /// Deletes the specified review. 
+        /// </summary>
+        /// <param name="reviewId">The id of the review to delete.</param>
+        /// <param name="productId">The id of the product that the review belongs to</param>
+        /// <returns></returns>
+        public async Task<ActionResult> DeleteReview(string reviewId, string productId)
+        {
+            await _productService.DeleteReview(reviewId, productId);
+            return RedirectToAction("Product", new { id = productId });
         }
 
         /// <summary>
@@ -87,9 +99,7 @@ namespace Congo.Web.Controllers
         [HttpPost]
         public async Task<ActionResult> EditProduct(ProductVM vm)
         { 
-
             await _productService.UpdateProduct(vm);
-            //ProductVM updatedVm = await _productService.GetProductById(vm.Id);
             return RedirectToAction("Product", new { id = vm.Id });
         }
 

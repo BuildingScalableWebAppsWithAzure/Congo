@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using Congo.Web.ViewModels;
-using System.Threading.Tasks;
-using Congo.Web.Persistence;
-using Congo.Web.Models;
-
-namespace Congo.Web.Services
+﻿namespace Congo.Web.Services
 {
+    using System.Collections.Generic;
+    using Congo.Web.ViewModels;
+    using System.Threading.Tasks;
+    using Congo.Web.Persistence;
+    using Congo.Web.Models;
+
     /// <summary>
     /// Business logic for interacting with products, categories, and reviews. 
     /// </summary>
@@ -49,13 +49,16 @@ namespace Congo.Web.Services
         /// <returns></returns>
         public async Task UpdateProduct(ProductVM vm)
         {
-            Product updatedProduct = new Product();
-            updatedProduct.Id = vm.Id;
-            updatedProduct.ProductName = vm.ProductName;
-            updatedProduct.Description = vm.Description;
-            updatedProduct.Price = vm.Price;
+            //first, retrieve the product from the database. We're doing so because 
+            //we are allowing only a subset of fields to be updated, and we are ultimately 
+            //replacing the document in Cosmos DB. 
+            Product p = await _repository.GetProductById(vm.Id);
 
-            await _repository.UpdateProduct(updatedProduct);
+            p.ProductName = vm.ProductName;
+            p.Description = vm.Description;
+            p.Price = vm.Price;
+
+            await _repository.UpdateItemAsync(p.Id, Constants.PARTITIONKEY_PRODUCT, p);
         }
 
         /// <summary>
@@ -64,13 +67,58 @@ namespace Congo.Web.Services
         public async Task WriteReviewToDatabase(ProductReviewVM review)
         {
             ProductReview model = new ProductReview();
+
             model.DocType = Constants.DOCTYPE_REVIEW;
             model.PartitionKey = "review-" + review.ProductId;
             model.Rating = review.Rating;
             model.Review = review.Review;
             model.ReviewerName = review.ReviewerName;
             model.ProductId = review.ProductId; 
-            await _repository.CreateItemAsync(model);
+
+            //we'll have the document that was just inserted returned so that we can
+            //get the new id. 
+            model = (ProductReview)(dynamic)await _repository.CreateDocumentAsync(model);
+
+            //next, check to see if there is already a first review for the
+            //product. If not, update the product document to include
+            //this new review. 
+            Product p = await _repository.GetProductById(review.ProductId);
+            if (p.FirstReview == null)
+            {
+                p.FirstReview = model;
+                await _repository.UpdateItemAsync(p.Id, Constants.PARTITIONKEY_PRODUCT, p);
+            }
+        }
+
+        /// <summary>
+        /// Removes the specified review from the Cosmos DB Collection. Also checks to see
+        /// if the deleted review is the first review for its associated product. If so, 
+        /// remove the product's firstreview as well. 
+        /// </summary>
+        /// <param name="reviewId"></param>
+        /// <param name="productId"></param>
+        /// <returns></returns>
+        public async Task DeleteReview(string reviewId, string productId)
+        {
+            await _repository.DeleteDocumentAsync(reviewId, $"review-{productId}");
+
+            //retrieve the associated product. We'll check to see if it includes the
+            //deleted review. 
+            Product p = await _repository.GetProductById(productId);
+            if (p.FirstReview.Id == reviewId)
+            {
+                //we are deleting the first review. Find the next review and set it
+                //as the first, if applicable. 
+                List<ProductReview> allReviews = await _repository.GetReviewsForProduct(productId);
+                ProductReview nextReview = null;
+                if (allReviews.Count > 0)
+                {
+                    nextReview = allReviews[0]; 
+                }
+                p.FirstReview = nextReview;
+                await _repository.UpdateItemAsync(p.Id, Constants.PARTITIONKEY_PRODUCT, p);
+            }
+
         }
 
         /// <summary>
@@ -150,6 +198,7 @@ namespace Congo.Web.Services
             ProductReviewVM reviewVm = new ProductReviewVM()
             {
                 Id = pr.Id, 
+                ProductId = pr.ProductId, 
                 ReviewerName = pr.ReviewerName, 
                 Rating = pr.Rating, 
                 Review = pr.Review, 

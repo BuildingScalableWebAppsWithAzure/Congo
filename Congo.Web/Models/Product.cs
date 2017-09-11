@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json; 
-
-namespace Congo.Web.Models
+﻿namespace Congo.Web.Models
 {
+    using Newtonsoft.Json;
+
     /// <summary>
     /// Models a single product. 
     /// </summary>
@@ -30,8 +30,5 @@ namespace Congo.Web.Models
 
         [JsonProperty("price")]
         public decimal Price { get; set; }
-
-        [JsonProperty("partitionkey")]
-        public string PartitionKey { get; set; }
     }
 }

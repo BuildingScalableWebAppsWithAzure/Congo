@@ -8,5 +8,8 @@
         public const string DOCTYPE_CATEGORY = "category";
         public const string DOCTYPE_PRODUCT = "product";
         public const string DOCTYPE_REVIEW = "product_review";
+
+        public const string PARTITIONKEY_PRODUCT = "product";
+        public const string PARTITIONKEY_CATEGORY = "category";
     }
 }

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-
-namespace Congo.Web.ViewModels
+﻿namespace Congo.Web.ViewModels
 {
+    /// <summary>
+    /// Used for submitting information for a new review. 
+    /// </summary>
     public class WriteReviewVM
     {
         public ProductReviewVM Review { get; set; }
